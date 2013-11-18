@@ -412,16 +412,18 @@ void SliceView::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             if(main_window->ui->rb2Dseries->isChecked())//2D series
             {
                 for(unsigned int base_index = 0;base_index < data.size();base_index += roi.plane_size())
-                for (image::pixel_index<2>index; index.valid(slice_image.geometry());
-                    index.next(slice_image.geometry()))
+                for (image::pixel_index<2>index;
+                     index.is_valid(slice_image.geometry());
+                     index.next(slice_image.geometry()))
                     if (QColor(roi_map.pixel(index.x(),index.y())).red() > 128)
                         pos.push_back(index.index()+base_index);
             }
             else
             {
                 unsigned int base_index = slice_pos*roi.plane_size();
-                for (image::pixel_index<2>index; index.valid(slice_image.geometry());
-                    index.next(slice_image.geometry()))
+                for (image::pixel_index<2>index;
+                     index.is_valid(slice_image.geometry());
+                     index.next(slice_image.geometry()))
                     if (QColor(roi_map.pixel(index.x(),index.y())).red() > 128)
                         pos.push_back(index.index()+base_index);
             }
@@ -682,6 +684,11 @@ bool process_image_single(ImageType& data,
         image::morphology::closing(cur_roi,-1);
         processed = true;
     }
+    if(id == "convex")
+    {
+        image::morphology::convex_xy(cur_roi);
+        processed = true;
+    }
     if(id == "convex_x")
     {
         image::morphology::convex_x(cur_roi);
@@ -717,7 +724,7 @@ bool process_image_single(ImageType& data,
     if(id == "fast_marching")
     {
         for(image::pixel_index<ROIType::dimension> index;
-            cur_roi.geometry().is_valid(index);
+            index.is_valid(cur_roi.geometry());
             index.next(cur_roi.geometry()))
             if(cur_roi[index.index()])
             {
@@ -767,7 +774,7 @@ bool process_image_single(ImageType& data,
     if(id == "coordinate")
     {
         for(image::pixel_index<ROIType::dimension> index;
-            cur_roi.geometry().is_valid(index);
+            index.is_valid(cur_roi.geometry());
             index.next(cur_roi.geometry()))
             if(cur_roi[index.index()])
             {

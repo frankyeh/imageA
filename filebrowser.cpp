@@ -17,17 +17,20 @@ FileBrowser::FileBrowser(QWidget *parent) :
     ui->graphicsView->setMaximumHeight(10);
     ui->tableWidget->setColumnWidth(0,40);
     ui->tableWidget->setColumnWidth(1,40);
-    ui->tableWidget->setColumnWidth(2,130);
-    ui->tableWidget->setColumnWidth(3,60);
-    ui->tableWidget->setColumnWidth(4,60);
+    ui->tableWidget->setColumnWidth(2,100);
+    ui->tableWidget->setColumnWidth(3,90);
+    ui->tableWidget->setColumnWidth(4,130);
     ui->tableWidget->setColumnWidth(5,60);
     ui->tableWidget->setColumnWidth(6,60);
     ui->tableWidget->setColumnWidth(7,60);
     ui->tableWidget->setColumnWidth(8,60);
     ui->tableWidget->setColumnWidth(9,100);
-    ui->subject_list->setColumnWidth(0,150);
-    ui->subject_list->setColumnWidth(1,150);
-    ui->subject_list->setColumnWidth(2,150);
+
+    ui->subject_list->setColumnWidth(0,110);
+    ui->subject_list->setColumnWidth(1,80);
+    ui->subject_list->setColumnWidth(2,110);
+    ui->tableWidget->setStyleSheet("selection-background-color: blue");
+    ui->subject_list->setStyleSheet("selection-background-color: blue");
 
     mon_map["Jan"] = "01";
     mon_map["Feb"] = "02";
@@ -73,8 +76,8 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int current
     if(currentRow == -1 || currentRow == previousRow)
         return;
     QStringList params1,params2;
-    params1 << " " << "Method" << "PVM_EchoTime" << "PVM_RepetitionTime" << "PVM_SliceThick";
-    params2 << " " << "IMND_method_display_name" << "IMND_echo_time" << "IMND_rep_time" << "IMND_slice_thick";
+    params1 << "Method" << "PVM_EchoTime" << "PVM_RepetitionTime" << "PVM_SliceThick";
+    params2 << "IMND_method_display_name" << "IMND_echo_time" << "IMND_rep_time" << "IMND_slice_thick";
     QDir directory = ui->WorkDir->text() + "/" +
                      ui->subject_list->item(currentRow,0)->text();
     study_name = ui->subject_list->item(currentRow,1)->text();
@@ -82,7 +85,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int current
     data.clear();
     ui->tableWidget->clear();
     QStringList header;
-    header << "#" << "reco" << "Sequence" << "TE" << "TR" << "Slice(mm)" << "FA" << "Size" << "FOV(cm)" << "Resolution(mm)";
+    header << "#" << "reco" << "Sequence" << "Image size" << "Resolution(mm)" << "FOV(cm)" << "TE" << "TR" << "FA";
     ui->tableWidget->setHorizontalHeaderLabels(header);
     ui->tableWidget->setRowCount(0);
     image_list.clear();
@@ -106,7 +109,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int current
     std::sort(seq_list.begin(),seq_list.end());
     for(int index = 0;index < seq_list.size();++index)
     {
-        image::io::bruker_info method,acq,reco_file;
+        image::io::bruker_info method,acq,reco_file,d3proc_file;
         bool method_file = true;
         QString method_dir = directory.absolutePath() + "/" + QString::number(seq_list[index]);
         QString method_file_name =  method_dir+ "/method";
@@ -123,26 +126,29 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int current
         QStringList params = method_file ? params1:params2;
         for(int reco = 1;;++reco)
         {
-            QString cur_file_name = method_dir + "/pdata/" +
-                                    QString::number(reco) + "/2dseq";
-            QString cur_reco_name = method_dir + "/pdata/" +
-                                    QString::number(reco) + "/reco";
+            QString reco_dir = method_dir + "/pdata/" + QString::number(reco);
+            if(!QDir(reco_dir).exists())
+                break;
+            QString cur_file_name = reco_dir + "/2dseq";
+            QString cur_d3proc_name = reco_dir + "/d3proc";
+            QString cur_reco_name = reco_dir + "/reco";
             if(!QFileInfo(cur_file_name).exists() ||
                !reco_file.load_from_file(cur_reco_name.toLocal8Bit().begin()))
-                break;
+                continue;
             int row = ui->tableWidget->rowCount();
             ui->tableWidget->setRowCount(row+1);
 
             QStringList item_list;
             item_list << QString::number(seq_list[index]);
             item_list << QString::number(reco);
+            item_list << method[params[0].toLocal8Bit().begin()].c_str(); // sequence
 
-            for(size_t col = 1;col < params.count();++col)
-                item_list << method[params[col].toLocal8Bit().begin()].c_str();
-            item_list << acq["ACQ_flip_angle"].c_str();
-            item_list << reco_file["RECO_size"].c_str();
-            item_list << reco_file["RECO_fov"].c_str();
+            if(d3proc_file.load_from_file(cur_d3proc_name.toLocal8Bit().begin()))
+                item_list << (d3proc_file["IM_SIX"] + " / " + d3proc_file["IM_SIY"] + " / "+ d3proc_file["IM_SIZ"]).c_str();
+            else
+                item_list << reco_file["RECO_size"].c_str();
 
+            // output resolution
             {
                 std::istringstream size_in(reco_file["RECO_size"].c_str());
                 std::istringstream fov_in(reco_file["RECO_fov"].c_str());
@@ -150,13 +156,20 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int current
                 std::vector<float> data2((std::istream_iterator<float>(fov_in)),std::istream_iterator<float>());
                 std::ostringstream out;
                 for(int index = 0;index < data1.size() && index < data2.size();++index)
-                    out << data2[index]*10.0/data1[index] << " ";
+                    out << data2[index]*10.0/data1[index] << " / ";
+                out << method[params[3].toLocal8Bit().begin()].c_str(); // slice thickness
                 item_list << out.str().c_str();
             }
+            item_list << reco_file["RECO_fov"].c_str(); // FOV
+            item_list << method[params[1].toLocal8Bit().begin()].c_str(); // TE
+            item_list << method[params[2].toLocal8Bit().begin()].c_str(); // TR
+            item_list << acq["ACQ_flip_angle"].c_str(); //FA
 
 
             for(int col = 0;col < item_list.count();++col)
                 ui->tableWidget->setItem(row, col, new QTableWidgetItem(item_list[col]));
+
+
             image_list << cur_file_name;
             method_list.push_back(method["Method"]);
             method_file_list.push_back(method_file_name.toLocal8Bit().begin());
@@ -304,7 +317,10 @@ void FileBrowser::prepare_images(std::vector<image::basic_image<float,3> >& imag
     short rmin[3],rmax[3];
     trimmed_mask = mask;
     if(!mask.empty())
-        image::trim(trimmed_mask,rmin,rmax);
+    {
+        bounding_box(trimmed_mask,rmin,rmax);
+        crop(trimmed_mask,rmin,rmax);
+    }
     begin_prog("loading");
     for(unsigned int index = 0;check_prog(index,sel.size());++index)
     {
