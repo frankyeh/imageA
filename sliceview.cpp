@@ -104,7 +104,7 @@ bool SliceView::checkSave(void)
 {
     if(!modified)
         return true;
-    switch(QMessageBox::question(0,"T2 Studio","Save ROI?",
+    switch(QMessageBox::question(0,"ImageA","Save ROI?",
         QMessageBox::Save|QMessageBox::Discard|QMessageBox::Cancel))
     {
         case QMessageBox::Save:
@@ -497,7 +497,7 @@ SliceView::~SliceView(void)
 {
     if(modified)
     {
-        if(QMessageBox::question(0,"T2 Studio","Save ROI?",
+        if(QMessageBox::question(0,"ImageA","Save ROI?",
             QMessageBox::Save|QMessageBox::Discard) == QMessageBox::Save)
             saveToFile();
     }
@@ -858,6 +858,11 @@ void SliceView::perform_action(QString id,const std::vector<int>& value)
         main_window->ui->rb3D->setChecked(true);
         return;
     }
+    if(id == "echo")
+    {
+        echo = !echo;
+        return;
+    }
     if(id == "push")
     {
         back_up_data.push_back(data);
@@ -931,7 +936,6 @@ void SliceView::actions(QStringList act_list)
 {
     for(int index = 0;index < act_list.count();++index)
     {
-        main_window->ui->textEdit->append(act_list[index]);
         std::istringstream cmd_line(act_list[index].toLocal8Bit().begin());
         std::string cmd;
         int repeat = 1;
@@ -944,6 +948,8 @@ void SliceView::actions(QStringList act_list)
             cmd_line >> repeat >> cmd;
             cmd = std::string("-")+cmd;
         }
+        if(cmd != "-echo" && echo)
+            main_window->ui->textEdit->append(act_list[index]);
         std::copy(std::istream_iterator<int>(cmd_line),
                   std::istream_iterator<int>(),
                   std::back_inserter(value));

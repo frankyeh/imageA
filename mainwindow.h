@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QRadioButton>
 #include "sliceview.h"
+#include "filebrowser.h"
 namespace Ui {
     class MainWindow;
 }
@@ -14,6 +15,7 @@ class MainWindow : public QMainWindow
 
 public:
     Ui::MainWindow *ui;
+    std::auto_ptr<FileBrowser> browse_files;
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     bool eventFilter(QObject *obj, QEvent *event);

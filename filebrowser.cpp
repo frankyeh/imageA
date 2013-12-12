@@ -244,7 +244,6 @@ void FileBrowser::show_image(void)
         std::copy(preview_voxel_size,preview_voxel_size+3,voxel_size);
         ui->graphicsView->setMaximumHeight(data.height()+10);
         cur_z = data.depth() >> 1;
-        mask.clear();
         preview_loaded = false;
         preview_thread.reset(0);
     }
@@ -291,6 +290,16 @@ void FileBrowser::preview_image(QString file_name)
     {
         header >> preview_data;
         header.get_voxel_size(preview_voxel_size);
+
+        QString ROIName = file_name+".roi.mat";
+        if(QFileInfo(ROIName).exists())
+        {
+            image::io::mat_read mat_header;
+            mat_header.load_from_file(ROIName.toLocal8Bit().begin());
+            mat_header >> mask;
+        }
+        else
+            mask.clear();
     }
     preview_loaded = true;
 }
@@ -539,7 +548,7 @@ void FileBrowser::on_DefaultSegmentation_clicked()
 void FileBrowser::on_threshold_clicked()
 {
     bool ok;
-    double threshold = QInputDialog::getDouble(this,"T2 Studio","Please assign the threshold",
+    double threshold = QInputDialog::getDouble(this,"ImageA","Please assign the threshold",
                                          (float)image::segmentation::otsu_threshold(data),
                                          (float)*std::min_element(data.begin(),data.end()),
                                          (float)*std::max_element(data.begin(),data.end()),1,&ok);

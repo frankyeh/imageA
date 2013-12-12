@@ -17,6 +17,7 @@ class SliceView : public QGraphicsScene
 public:
     QString FileName;
     float voxel_size[3];
+    bool echo;
     std::vector<image::basic_image<float,3> > back_up_data;
     image::basic_image<float,3> data;
     image::basic_image<unsigned char,3> roi;
@@ -60,7 +61,7 @@ public:
     MainWindow* main_window;
     SliceView(MainWindow* main_window_):
             slice_pos(0),main_window(main_window_),
-            modified(false),edit_option(1)
+            modified(false),edit_option(1),echo(true)
     {
 
     }

@@ -131,11 +131,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 
       QString status;
-      status = QString("(%1,%2,%3) ").arg(point.x()).arg(point.y()).arg(ui->SlicePos->value());
       int pos[3];
       pos[0] = std::floor(((float)point.x()+0.5)/ui->display_ratio->value());
       pos[1] = std::floor(((float)point.y()+0.5)/ui->display_ratio->value());
       pos[2] = ui->SlicePos->value();
+      status = QString("(%1,%2,%3) ").arg(pos[0]).arg(pos[1]).arg(pos[2]);
       if(!scene.data.empty()&& scene.data.geometry().is_valid(pos))
           status += QString(" %1").arg(scene.data.at(pos[0],pos[1],pos[2]));
       ui->statusBar->showMessage(status);
@@ -167,7 +167,7 @@ void MainWindow::openFile(QString filename)
     if(!scene.checkSave())
         return;
     scene.loadFromFile(filename);
-    setWindowTitle(QString("T2 Studio ") + __DATE__ + " build - " + filename);
+    setWindowTitle(QString("ImageA ") + __DATE__ + " build - " + filename);
 
     // update recent file list
     QSettings settings;
@@ -192,10 +192,11 @@ void MainWindow::open_file()
 
     if(QFileInfo(filename).baseName() == "subject")
     {
-        std::auto_ptr<FileBrowser> new_mdi(new FileBrowser(this));
-        if(new_mdi->exec() == QDialog::Rejected)
+        if(!browse_files.get())
+            browse_files.reset(new FileBrowser(this));
+        if(browse_files->exec() == QDialog::Rejected)
             return;
-        filename = new_mdi->image_file_name;
+        filename = browse_files->image_file_name;
     }
     openFile(filename);
 }
@@ -205,7 +206,7 @@ void MainWindow::openRecentFile(void)
     if(!scene.checkSave())
         return;
     QAction *action = qobject_cast<QAction *>(sender());
-    setWindowTitle(QString("T2 Studio ") + __DATE__ + " build - " + action->data().toString());
+    setWindowTitle(QString("ImageA ") + __DATE__ + " build - " + action->data().toString());
     scene.loadFromFile(action->data().toString());
 }
 
@@ -279,11 +280,12 @@ void MainWindow::on_applyScript_clicked()
 
 void MainWindow::on_actionBrowse_triggered()
 {
-    std::auto_ptr<FileBrowser> new_mdi(new FileBrowser(this));
-    if(new_mdi->exec() == QDialog::Rejected || !scene.checkSave())
+    if(!browse_files.get())
+        browse_files.reset(new FileBrowser(this));
+    if(browse_files->exec() == QDialog::Rejected || !scene.checkSave())
         return;
-    scene.loadFromData(new_mdi->data,new_mdi->voxel_size,new_mdi->image_file_name);
-    setWindowTitle(QString("T2 Studio ") + __DATE__ + " build - " + new_mdi->study_name + " at " + new_mdi->image_file_name);
+    scene.loadFromData(browse_files->data,browse_files->voxel_size,browse_files->image_file_name);
+    setWindowTitle(QString("ImageA ") + __DATE__ + " build - " + browse_files->study_name + " at " + browse_files->image_file_name);
 
 }
 

@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1114</width>
+    <width>1233</width>
     <height>761</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>T2 Studio</string>
+   <string>ImageA</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -232,7 +232,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1114</width>
+     <width>1233</width>
      <height>21</height>
     </rect>
    </property>
