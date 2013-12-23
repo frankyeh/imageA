@@ -268,8 +268,16 @@
     <addaction name="actionUndo"/>
     <addaction name="separator"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <addaction name="actionScreenshot"/>
+    <addaction name="actionScreenshot_on_ROI"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
   </widget>
   <widget class="QDockWidget" name="dockWidget">
    <property name="minimumSize">
@@ -624,6 +632,16 @@
   <action name="actionBitmap_series">
    <property name="text">
     <string>Bitmap series</string>
+   </property>
+  </action>
+  <action name="actionScreenshot">
+   <property name="text">
+    <string>Copy whole view</string>
+   </property>
+  </action>
+  <action name="actionScreenshot_on_ROI">
+   <property name="text">
+    <string>Copy ROI &amp;View</string>
    </property>
   </action>
  </widget>

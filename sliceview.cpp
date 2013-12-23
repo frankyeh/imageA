@@ -6,6 +6,7 @@
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QSettings>
+#include <QClipboard>
 #include "sliceview.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -44,6 +45,7 @@ void SliceView::loadFromData(image::basic_image<float,3>& data_,const float* vs,
     std::copy(vs,vs+3,voxel_size);
     FileName = FileName_;
     initialize();
+    showSlide();
 }
 
 void SliceView::loadFromFile(QString FileName_)
@@ -193,6 +195,35 @@ void SliceView::saveBitmapAll(void)
         bitmap_header << buf.slice_at(index);
         bitmap_header.save_to_file((filename+QString::number(index)+".bmp").toLocal8Bit().begin());
     }
+}
+
+
+void SliceView::screenshot2clipboard(void)
+{
+    if(view_image.isNull())
+        return;
+    QApplication::clipboard()->setImage(view_image);
+}
+
+void SliceView::roiscreenshot2clipboard(void)
+{
+    if(view_image.isNull())
+        return;
+    image::geometry<2> range_min,range_max;
+    image::bounding_box(image::make_image(image::geometry<2>(roi.width(),roi.height()),
+                                          &*roi.begin()+slice_pos*roi.plane_size()),
+                 range_min,range_max,0);
+    if(range_min[0] == range_max[0])
+        return;
+    range_min[0] = std::max<int>(0,range_min[0]-10);
+    range_min[1] = std::max<int>(0,range_min[1]-10);
+    range_max[0] = std::min<int>(roi.width()-1,range_max[0]+10);
+    range_max[1] = std::min<int>(roi.height()-1,range_max[1]+10);
+
+    float display_ratio = main_window->ui->display_ratio->value();
+    QApplication::clipboard()->setImage(view_image.copy(range_min[0]*display_ratio,range_min[1]*display_ratio,
+                                        (range_max[0]-range_min[0])*display_ratio,
+                                        (range_max[1]-range_min[1])*display_ratio));
 }
 
 void SliceView::showSlide(void)

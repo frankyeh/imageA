@@ -57,6 +57,8 @@ public slots:
     void saveBitmap(void);
     void saveBitmapAll(void);
     bool checkSave(void);
+    void screenshot2clipboard(void);
+    void roiscreenshot2clipboard(void);
 public:
     MainWindow* main_window;
     SliceView(MainWindow* main_window_):

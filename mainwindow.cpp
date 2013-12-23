@@ -50,6 +50,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->showMask,SIGNAL(clicked()),&scene,SLOT(showSlide()));
     connect(ui->showBlend,SIGNAL(clicked()),&scene,SLOT(showSlide()));
 
+    connect(ui->actionScreenshot_on_ROI,SIGNAL(triggered()),&scene,SLOT(roiscreenshot2clipboard()));
+    connect(ui->actionScreenshot,SIGNAL(triggered()),&scene,SLOT(screenshot2clipboard()));
 
     // actions
     QStringList cmd_list;
@@ -295,3 +297,4 @@ void MainWindow::on_clearlog_clicked()
 {
     ui->textEdit->clear();
 }
+
