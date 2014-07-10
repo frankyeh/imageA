@@ -1,4 +1,5 @@
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsTextItem>
 #include <QPainter>
 #include <QMessageBox>
 #include <QPushButton>
@@ -11,7 +12,17 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-
+QColor region_color[10] = {Qt::red,
+                    Qt::green,
+                    Qt::blue,
+                    Qt::cyan,
+                    Qt::magenta,
+                    Qt::yellow,
+                    Qt::darkRed,
+                    Qt::darkGreen,
+                    Qt::darkBlue,
+                    Qt::darkCyan};
+extern image::color_image bar,colormap;
 void SliceView::initialize(void)
 {
 
@@ -38,6 +49,24 @@ void SliceView::initialize(void)
     main_window->ui->SlicePos->setMaximum(data.depth()-1);
     main_window->ui->SlicePos->setValue(data.depth() >> 1);
 
+    disconnect(main_window->ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(showSlide()));
+    disconnect(main_window->ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(showSlide()));
+
+    float max_value = *std::max_element(data.begin(),data.end());
+    float min_value = *std::min_element(data.begin(),data.end());
+    float range = max_value-min_value;
+
+    main_window->ui->max_value->setRange(min_value,max_value*5.0);
+    main_window->ui->min_value->setRange(min_value - range,max_value);
+    main_window->ui->min_value->setSingleStep(range*0.1);
+    main_window->ui->max_value->setSingleStep(range*0.1);
+    main_window->ui->max_value->setValue(max_value);
+    main_window->ui->min_value->setValue(min_value);
+
+    connect(main_window->ui->max_value,SIGNAL(valueChanged(double)),this,SLOT(showSlide()));
+    connect(main_window->ui->min_value,SIGNAL(valueChanged(double)),this,SLOT(showSlide()));
+
+    mouse_down = false;
 }
 void SliceView::loadFromData(image::basic_image<float,3>& data_,const float* vs,QString FileName_)
 {
@@ -228,31 +257,35 @@ void SliceView::roiscreenshot2clipboard(void)
 
 void SliceView::showSlide(void)
 {
+
     if(!data.size())
         return;
     image::basic_image<float,2> buffer;
     image::reslicing(data,buffer,2,slice_pos);
 
-    float brightness = main_window->ui->brightness->value();
-    float dynamic_range = maximum_intensity > mean_intensity ?
-                          main_window->ui->dynamic_range->value()/
-                          (maximum_intensity-mean_intensity) : 1.0;
+    float min_value = main_window->ui->min_value->value();
+    float max_value = main_window->ui->max_value->value();
+    if(max_value <= min_value)
+        return;
+    float range = 255.9/(max_value-min_value);
+
     slice_image.resize(buffer.geometry());
     for(unsigned int index = 0;index < buffer.size();++index)
     {
         float value = buffer[index];
-        value -= mean_intensity;
-        value *= dynamic_range;
-        value += brightness;
+        value -= min_value;
+        value *= range;
         value = std::floor(value);
         if(value < 0.0)
             value = 0.0;
         if(value > 255.0)
             value = 255.0;
-        slice_image[index] = (unsigned char)value;
+        if(main_window->ui->style->currentIndex())
+            slice_image[index] = colormap[value];
+        else
+            slice_image[index] = (unsigned char)value;
     }
 
-    unsigned char mask = 1 << main_window->active_region();
     unsigned int base_index = slice_pos*roi.plane_size();
 
     if(main_window->ui->showBlend->isChecked() ||
@@ -266,10 +299,8 @@ void SliceView::showSlide(void)
                 continue;
             if(show_mask)
                 slice_image[index] = 0;
-            if(roi_value & mask)
-                slice_image[index].r = 255;
-            else
-                slice_image[index].b = 255;
+            if(roi_value <= 10)
+            slice_image[index].color |= region_color[roi_value-1].rgb();
         }
     }
 
@@ -282,10 +313,14 @@ void SliceView::showSlide(void)
     {
         QPainter paint(&view_image);
         paint.setBrush(Qt::NoBrush);
-        for(int y = 1,index = slice_image.width();
-                             y < slice_image.height()-1;++y)
-        for(int x = 0;x < slice_image.width();++x,++index)
+        for(unsigned char region = 0;region <= 8;++region)
         {
+            paint.setPen(region_color[region]);
+            unsigned char cur_mask = 1 << region;
+            for(int y = 1,index = slice_image.width();
+                             y < slice_image.height()-1;++y)
+            for(int x = 0;x < slice_image.width();++x,++index)
+            {
             if(x == 0 || x+1 >= slice_image.width() || !roi[base_index+index])
                 continue;
             unsigned int cur_index = base_index+index;
@@ -293,10 +328,7 @@ void SliceView::showSlide(void)
             float xd_1 = xd+display_ratio;
             float yd = y*display_ratio;
             float yd_1 = yd+display_ratio;
-            for(unsigned char region = 0;region <= 8;++region)
             {
-                paint.setPen((region == 8)? Qt::red : Qt::blue);
-                unsigned char cur_mask = 1 << ((region == 8) ? main_window->active_region():region);
                 if(!(roi[cur_index] & cur_mask))
                     continue;
                 bool upper_edge = !(roi[cur_index-slice_image.width()] & cur_mask);
@@ -322,6 +354,7 @@ void SliceView::showSlide(void)
                                    xd_1-1,yd_1+(lower_edge? -1:0));
             }
         }
+        }
     }
     setSceneRect(0, 0, view_image.width(),view_image.height());
     clear();
@@ -329,10 +362,28 @@ void SliceView::showSlide(void)
     addRect(0, 0, view_image.width(),view_image.height(),
             QPen(),view_image);
 
+    // color bar
+    if(main_window->ui->style->currentIndex())
+    {
+        int shift = -10;
+        int right = view_image.width()+10;
+        addText(QString::number(main_window->ui->max_value->value()))->moveBy(right+25,shift);
+        for(int i = 1;i < 5;++i)
+            addText(QString::number(
+                                     (main_window->ui->max_value->value()-main_window->ui->min_value->value())*(5.0-(float)i)/5.00)+
+                                      main_window->ui->min_value->value())->moveBy(right+25,256*i/5-3+shift);
+        addText(QString::number(main_window->ui->min_value->value()))->moveBy(right+25,256+shift);
+        addPixmap(QPixmap::fromImage(
+                QImage((unsigned char*)&*bar.begin(),bar.width(),bar.height(),QImage::Format_RGB32)))->moveBy(right+5,10+shift);
+        right += 65;
+    }
+
 }
 
 void SliceView::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
+    if(data.empty())
+        return;
     if (mouseEvent->button() == Qt::LeftButton)
     {
         float Y = mouseEvent->scenePos().y();
@@ -355,7 +406,7 @@ void SliceView::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     QImage annotated_image = view_image;
     QPainter paint(&annotated_image);
 
-    paint.setPen(Qt::red);
+    paint.setPen(region_color[main_window->active_region()]);
     paint.setBrush(Qt::NoBrush);
 
     sel_point.push_back(image::vector<2,short>(X, Y));

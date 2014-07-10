@@ -65,6 +65,8 @@ private slots:
 
     void on_loadR2_clicked();
 
+    void on_MSME_clicked();
+
 public slots:
     void show_image();
     void populateDirs();

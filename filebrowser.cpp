@@ -595,6 +595,12 @@ void FileBrowser::on_buttonBox_accepted()
         preview_thread->join();
         show_image();
     }
+
+}
+
+void FileBrowser::on_MSME_clicked()
+{
+    on_buttonBox_accepted();
     if(method_list[ui->tableWidget->currentRow()] == "MSME" ||
        method_list[ui->tableWidget->currentRow()] == "MGE" ||
        method_list[ui->tableWidget->currentRow()] == "rARET2")
@@ -620,7 +626,8 @@ void FileBrowser::on_buttonBox_accepted()
             image::basic_image<float,3> new_data;
             calculateT2(image_data,assign_mask,TEs,new_data);
             data = new_data;
+            image::lower_threshold(data,0.0);
+            data *= 1000;
         }
     }
-
 }

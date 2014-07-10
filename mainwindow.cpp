@@ -29,29 +29,6 @@ MainWindow::MainWindow(QWidget *parent) :
     Rs[7] = ui->R7;
     Rs[8] = ui->R8;
     Rs[9] = ui->R9;
-    for (int i = 0; i < 10; ++i)
-        connect(Rs[i],SIGNAL(clicked(bool)),&scene,SLOT(showSlide()));
-
-    connect(ui->action_Open,SIGNAL(triggered()),this,SLOT(open_file()));
-    connect(ui->actionSave,SIGNAL(triggered()),&scene,SLOT(saveToFile()));
-    connect(ui->actionMAT4,SIGNAL(triggered()),&scene,SLOT(saveMat4()));
-    connect(ui->actionBitmap,SIGNAL(triggered()),&scene,SLOT(saveBitmap()));
-    connect(ui->actionBitmap_series,SIGNAL(triggered()),&scene,SLOT(saveBitmapAll()));
-
-    connect(ui->actionUndo,SIGNAL(triggered()),&scene,SLOT(undo()));
-    connect(ui->actionUndo,SIGNAL(triggered()),&scene,SLOT(showSlide()));
-
-    // Examination
-    connect(ui->brightness,SIGNAL(valueChanged(int)),&scene,SLOT(showSlide()));
-    connect(ui->dynamic_range,SIGNAL(valueChanged(int)),&scene,SLOT(showSlide()));
-    connect(ui->display_ratio,SIGNAL(valueChanged(int)),&scene,SLOT(showSlide()));
-    connect(ui->showNone,SIGNAL(clicked()),&scene,SLOT(showSlide()));
-    connect(ui->showBoundary,SIGNAL(clicked()),&scene,SLOT(showSlide()));
-    connect(ui->showMask,SIGNAL(clicked()),&scene,SLOT(showSlide()));
-    connect(ui->showBlend,SIGNAL(clicked()),&scene,SLOT(showSlide()));
-
-    connect(ui->actionScreenshot_on_ROI,SIGNAL(triggered()),&scene,SLOT(roiscreenshot2clipboard()));
-    connect(ui->actionScreenshot,SIGNAL(triggered()),&scene,SLOT(screenshot2clipboard()));
 
     // actions
     QStringList cmd_list;
@@ -94,8 +71,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QSettings settings;
     updateRecentList(settings.value("recentFileList").toStringList());
-    ui->brightness->setValue(settings.value("brightness",0).toInt());
-    ui->dynamic_range->setValue(settings.value("dynamic_range",128).toInt());
     ui->display_ratio->setValue(settings.value("display_ratio",5).toInt());
 
     // find all the scripts
@@ -109,14 +84,36 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
+    for (int i = 0; i < 10; ++i)
+        connect(Rs[i],SIGNAL(clicked(bool)),&scene,SLOT(showSlide()));
+
+    connect(ui->action_Open,SIGNAL(triggered()),this,SLOT(open_file()));
+    connect(ui->actionSave,SIGNAL(triggered()),&scene,SLOT(saveToFile()));
+    connect(ui->actionMAT4,SIGNAL(triggered()),&scene,SLOT(saveMat4()));
+    connect(ui->actionBitmap,SIGNAL(triggered()),&scene,SLOT(saveBitmap()));
+    connect(ui->actionBitmap_series,SIGNAL(triggered()),&scene,SLOT(saveBitmapAll()));
+
+    connect(ui->actionUndo,SIGNAL(triggered()),&scene,SLOT(undo()));
+    connect(ui->actionUndo,SIGNAL(triggered()),&scene,SLOT(showSlide()));
+
+    // Examination
+    connect(ui->display_ratio,SIGNAL(valueChanged(int)),&scene,SLOT(showSlide()));
+    connect(ui->showNone,SIGNAL(clicked()),&scene,SLOT(showSlide()));
+    connect(ui->showBoundary,SIGNAL(clicked()),&scene,SLOT(showSlide()));
+    connect(ui->showMask,SIGNAL(clicked()),&scene,SLOT(showSlide()));
+    connect(ui->showBlend,SIGNAL(clicked()),&scene,SLOT(showSlide()));
+    connect(ui->style,SIGNAL(currentIndexChanged(int)),&scene,SLOT(showSlide()));
+
+    connect(ui->actionScreenshot_on_ROI,SIGNAL(triggered()),&scene,SLOT(roiscreenshot2clipboard()));
+    connect(ui->actionScreenshot,SIGNAL(triggered()),&scene,SLOT(screenshot2clipboard()));
+
+
     qApp->installEventFilter(this);
 }
 
 MainWindow::~MainWindow()
 {
     QSettings settings;
-    settings.setValue("brightness",ui->brightness->value());
-    settings.setValue("dynamic_range",ui->dynamic_range->value());
     settings.setValue("display_ratio",ui->display_ratio->value());
     delete ui;
 }
@@ -169,6 +166,9 @@ void MainWindow::openFile(QString filename)
     if(!scene.checkSave())
         return;
     scene.loadFromFile(filename);
+
+
+
     setWindowTitle(QString("ImageA ") + __DATE__ + " build - " + filename);
 
     // update recent file list

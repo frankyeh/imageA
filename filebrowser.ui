@@ -387,6 +387,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="MSME">
+       <property name="text">
+        <string>MSME/MGE/rARET2</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QDialogButtonBox" name="buttonBox">
        <property name="enabled">
         <bool>true</bool>
@@ -434,6 +441,22 @@
     <hint type="destinationlabel">
      <x>286</x>
      <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>MSME</sender>
+   <signal>clicked()</signal>
+   <receiver>FileBrowser</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>360</x>
+     <y>498</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>444</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>
